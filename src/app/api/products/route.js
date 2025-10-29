@@ -1,32 +1,27 @@
-import { dbConnect } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/mongodb";
 import Product from "@/models/product";
 
-// Obtener todos los productos (opcionalmente filtrando por storeId)
-export async function GET(request) {
+// 📦 GET → Listar todos los productos
+export async function GET() {
   try {
-    await dbConnect();
-
-    const url = new URL(request.url);
-    const storeId = url.searchParams.get("storeId");
-
-    const query = storeId ? { storeId } : {};
-    const products = await Product.find(query);
-
-    return Response.json({ ok: true, products });
+    await connectToDatabase();
+    const products = await Product.find({}).sort({ createdAt: -1 });
+    return new Response(JSON.stringify(products), { status: 200 });
   } catch (error) {
-    return Response.json({ ok: false, error: error.message }, { status: 500 });
+    console.error("Error al obtener productos:", error);
+    return new Response("Error interno del servidor", { status: 500 });
   }
 }
 
-// Crear un nuevo producto
-export async function POST(request) {
+// 🆕 POST → Crear nuevo producto
+export async function POST(req) {
   try {
-    await dbConnect();
-    const data = await request.json();
-
-    const product = await Product.create(data);
-    return Response.json({ ok: true, product });
+    const body = await req.json();
+    await connectToDatabase();
+    const newProduct = await Product.create(body);
+    return new Response(JSON.stringify(newProduct), { status: 201 });
   } catch (error) {
-    return Response.json({ ok: false, error: error.message }, { status: 500 });
+    console.error("Error al crear producto:", error);
+    return new Response("Error interno del servidor", { status: 500 });
   }
 }
